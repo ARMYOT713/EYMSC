@@ -341,21 +341,37 @@
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <script>
+
 const Auth = {
   session: null,
   init() {
     const raw = sessionStorage.getItem('sc_user');
-    if (!raw) { location.href = '/index.html'; return false; }
+    // Si no hay sesión, redirige al inicio de forma segura
+    if (!raw) { 
+        window.location.replace('/'); 
+        return false; 
+    }
+    
     const u = JSON.parse(raw);
-    if (u.role !== 'client') { location.href = '/index.html'; return false; }
+    if (u.role !== 'client') { 
+        window.location.replace('/'); 
+        return false; 
+    }
+    
     this.session = u;
     document.getElementById('nav-name').textContent  = u.name;
     document.getElementById('nav-store').textContent = u.store;
     return true;
   },
+
+  // ESTA ES LA FUNCIÓN QUE CORREGIMOS PARA EVITAR EL ERROR 404
   logout() {
-    sessionStorage.removeItem('sc_user');
-    location.href = '/index.html';
+    // 1. Limpiamos TODA la sesión por seguridad
+    sessionStorage.clear();
+    
+    // 2. Usamos replace('/') para que Vercel encuentre la raíz
+    // y el usuario no pueda regresar con el botón "atrás" del navegador
+    window.location.replace('/');
   }
 };
 
