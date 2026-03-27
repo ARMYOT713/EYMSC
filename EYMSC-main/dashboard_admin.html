@@ -6,13 +6,11 @@
   <title>StockCloud_EYMS — Administrador</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styleadmin.css">
-
-   
-   
+</head>
 <body>
 
 <nav class="nav">
-  <a class="nav-brand" href="login.html">
+  <a class="nav-brand" href="index.html">
     <div class="nav-indicator"></div>
     Stock<span class="accent">Cloud</span>_EYMS
   </a>
@@ -23,9 +21,6 @@
   </div>
 </nav>
 
-
-     SHELL
-     ══════════════════════════════════════ -->
 <div class="shell">
 
   <aside class="sidebar">
@@ -55,10 +50,8 @@
     </div>
   </aside>
 
-  
   <main class="content">
 
-  
     <div class="view active" id="view-overview">
 
       <div class="page-hdr">
@@ -72,7 +65,6 @@
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="stats-grid">
         <div class="stat-card" style="--sc-color:var(--n300)">
           <div class="stat-lbl">Comercios Activos</div>
@@ -100,7 +92,6 @@
         </div>
       </div>
 
-      <!-- Tabla comercios + accesos -->
       <div class="grid-3-1">
         <div class="card">
           <div class="card-hdr">
@@ -121,7 +112,6 @@
         </div>
       </div>
 
-      <!-- Chart + distribución planes -->
       <div class="grid-2">
         <div class="card">
           <div class="card-hdr"><div class="card-title">Actividad del Sistema — 7 Días</div></div>
@@ -138,9 +128,6 @@
 
     </div>
 
-    <!-- ══════════════════════
-         COMERCIOS
-         ══════════════════════ -->
     <div class="view" id="view-comercios">
       <div class="page-hdr">
         <div>
@@ -158,9 +145,6 @@
       <div class="stores-grid" id="stores-grid"></div>
     </div>
 
-    <!-- ══════════════════════
-         USUARIOS
-         ══════════════════════ -->
     <div class="view" id="view-usuarios">
       <div class="page-hdr">
         <div>
@@ -185,9 +169,6 @@
       </div>
     </div>
 
-    <!-- ══════════════════════
-         LOG DE ACCESOS
-         ══════════════════════ -->
     <div class="view" id="view-accesos">
       <div class="page-hdr">
         <div>
@@ -208,9 +189,6 @@
       </div>
     </div>
 
-    <!-- ══════════════════════
-         ESTADÍSTICAS
-         ══════════════════════ -->
     <div class="view" id="view-estadisticas">
       <div class="page-hdr">
         <div>
@@ -259,9 +237,6 @@
       </div>
     </div>
 
-    <!-- ══════════════════════
-         PLANES
-         ══════════════════════ -->
     <div class="view" id="view-planes">
       <div class="page-hdr">
         <div>
@@ -318,9 +293,6 @@
       </div>
     </div>
 
-    <!-- ══════════════════════
-         CONFIGURACIÓN
-         ══════════════════════ -->
     <div class="view" id="view-config">
       <div class="page-hdr">
         <div>
@@ -374,9 +346,7 @@
   </main>
 </div>
 
-<!-- ══════════════════════════════════
-     MODAL: Agregar Comercio
-     ══════════════════════════════════ -->
+<!-- MODAL: Agregar Comercio -->
 <div class="modal-overlay" id="modal-add-store" onclick="closeOnBg(event,'add-store')">
   <div class="modal">
     <div class="modal-title">Registrar Comercio</div>
@@ -423,9 +393,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════
-     MODAL: Agregar Usuario
-     ══════════════════════════════════ -->
+<!-- MODAL: Agregar Usuario -->
 <div class="modal-overlay" id="modal-add-user" onclick="closeOnBg(event,'add-user')">
   <div class="modal">
     <div class="modal-title">Nuevo Usuario</div>
@@ -463,9 +431,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════
-     MODAL: Detalle Comercio
-     ══════════════════════════════════ -->
+<!-- MODAL: Detalle Comercio -->
 <div class="modal-overlay" id="modal-store-detail" onclick="closeOnBg(event,'store-detail')">
   <div class="modal">
     <div class="modal-title" id="detail-title">Detalle</div>
@@ -481,29 +447,23 @@
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <script>
-/* ============================================================
-   AUTH GUARD
-   ============================================================ */
 const Auth = {
   session: null,
   init() {
     const raw = sessionStorage.getItem('sc_user');
-    if (!raw) { location.href = 'login.html'; return false; }
+    if (!raw) { location.href = 'index.html'; return false; }
     const u = JSON.parse(raw);
-    if (u.role !== 'admin') { location.href = 'login.html'; return false; }
+    if (u.role !== 'admin') { location.href = 'index.html'; return false; }
     this.session = u;
     document.getElementById('nav-name').textContent = u.name || u.username;
     return true;
   },
   logout() {
     sessionStorage.removeItem('sc_user');
-    location.href = 'login.html';
+    location.href = 'index.html';
   }
 };
 
-/* ============================================================
-   MODEL
-   ============================================================ */
 const AdminModel = {
   stores: [
     { id:1, name:'Tienda El Sol',      type:'Tienda',   city:'Toluca',       owner:'Juan Pérez',   plan:'Pro',        active:true },
@@ -514,13 +474,13 @@ const AdminModel = {
     { id:6, name:'Casa & Jardín',      type:'Tienda',   city:'Toluca',       owner:'Rosa Vega',    plan:'Básico',     active:true },
   ],
   users: [
-    { id:'a1',   username:'Admin',               name:'Administrador EYMS', role:'admin',  store:null,                plan:null        },
-    { id:'c1',   username:'Tienda El Sol',        name:'Juan Pérez',         role:'client', store:'Tienda El Sol',      plan:'Pro'       },
-    { id:'c2',   username:'Tech Depot',           name:'Carlos Ríos',        role:'client', store:'Tech Depot',         plan:'Pro'       },
-    { id:'c3',   username:'Mercado Central',      name:'María García',       role:'client', store:'Mercado Central',    plan:'Enterprise'},
-    { id:'c4',   username:'Moda Plus',            name:'Ana López',          role:'client', store:'Moda Plus',          plan:'Básico'    },
-    { id:'c5',   username:'Abarrotes Don Luis',   name:'Luis Torres',        role:'client', store:'Abarrotes Don Luis', plan:'Pro'       },
-    { id:'c6',   username:'Casa & Jardín',        name:'Rosa Vega',          role:'client', store:'Casa & Jardín',      plan:'Básico'    },
+    { id:'a1', username:'Admin',             name:'Administrador EYMS', role:'admin',  store:null,                plan:null         },
+    { id:'c1', username:'Tienda El Sol',     name:'Juan Pérez',         role:'client', store:'Tienda El Sol',     plan:'Pro'        },
+    { id:'c2', username:'Tech Depot',        name:'Carlos Ríos',        role:'client', store:'Tech Depot',        plan:'Pro'        },
+    { id:'c3', username:'Mercado Central',   name:'María García',       role:'client', store:'Mercado Central',   plan:'Enterprise' },
+    { id:'c4', username:'Moda Plus',         name:'Ana López',          role:'client', store:'Moda Plus',         plan:'Básico'     },
+    { id:'c5', username:'Abarrotes Don Luis',name:'Luis Torres',        role:'client', store:'Abarrotes Don Luis',plan:'Pro'        },
+    { id:'c6', username:'Casa & Jardín',     name:'Rosa Vega',          role:'client', store:'Casa & Jardín',     plan:'Básico'     },
   ],
   planPrices: { 'Básico':299, 'Pro':799, 'Enterprise':2500 },
   nextId: 7,
@@ -544,9 +504,6 @@ const AdminModel = {
   }
 };
 
-/* ============================================================
-   CONTROLLER
-   ============================================================ */
 const AdminCtrl = {
   filteredStores: null,
 
@@ -655,9 +612,6 @@ const AdminCtrl = {
   exportReport() { showToast('Generando reporte global... (demo)'); }
 };
 
-/* ============================================================
-   VIEW
-   ============================================================ */
 const AdminView = {
   renderAll() {
     this.renderOverviewStats();
@@ -791,7 +745,7 @@ const AdminView = {
           <td class="td-muted" style="font-family:monospace;font-size:.74rem">${l.ip}</td>
           <td><span class="${l.role==='admin'?'log-role-admin':'log-role-client'}">${l.role==='admin'?'ADMIN':'CLIENTE'}</span></td>
         </tr>`).join('')
-      : '<tr><td colspan="6" style="text-align:center;padding:1.75rem;color:rgba(77,148,221,.25);font-size:.8rem">Sin accesos registrados. Inicia sesión desde el login para generar entradas.</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center;padding:1.75rem;color:rgba(77,148,221,.25);font-size:.8rem">Sin accesos registrados.</td></tr>';
     document.getElementById('log-footer').textContent =
       log.length ? log.length + ' registro' + (log.length!==1?'s':'') + ' en total' : '—';
   },
@@ -853,9 +807,6 @@ AdminCtrl.deleteUser = function(id) {
   showToast('Usuario eliminado: ' + u.name);
 };
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
 function planBadgeCls(plan) {
   if (plan === 'Enterprise') return 'badge-warn';
   if (plan === 'Pro')        return 'badge-teal';
@@ -880,9 +831,6 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-/* ============================================================
-   INIT
-   ============================================================ */
 if (Auth.init()) AdminCtrl.init();
 </script>
 </body>
