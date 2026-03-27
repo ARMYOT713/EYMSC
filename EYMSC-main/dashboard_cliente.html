@@ -345,9 +345,9 @@ const Auth = {
   session: null,
   init() {
     const raw = sessionStorage.getItem('sc_user');
-    if (!raw) { location.href = 'index.html'; return false; }
+    if (!raw) { location.href = '/index.html'; return false; }
     const u = JSON.parse(raw);
-    if (u.role !== 'client') { location.href = 'index.html'; return false; }
+    if (u.role !== 'client') { location.href = '/index.html'; return false; }
     this.session = u;
     document.getElementById('nav-name').textContent  = u.name;
     document.getElementById('nav-store').textContent = u.store;
@@ -355,7 +355,7 @@ const Auth = {
   },
   logout() {
     sessionStorage.removeItem('sc_user');
-    location.href = 'index.html';
+    location.href = '/index.html';
   }
 };
 
