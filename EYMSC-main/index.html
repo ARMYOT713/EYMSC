@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockCloud_EYMS — Acceso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="css/style.css">
+
+<body>
+
+  <!-- ══════════ LEFT ══════════ -->
+  <div class="left">
+    <div class="glow-blob"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="scan-line"></div>
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+    <div class="vert-label">Sistema de Inventarios · Cloud · EYMS</div>
+
+    <div class="left-content">
+      <div class="brand-name">
+        Stock<span class="accent">Cloud</span><br>EYMS
+      </div>
+      <div class="brand-tagline">Gestión de Inventarios</div>
+      <div class="divider"></div>
+      <div class="left-desc">
+        Plataforma centralizada para el control y administración de inventarios de múltiples establecimientos comerciales en la nube.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ RIGHT ══════════ -->
+  <div class="right">
+    <div class="form-wrap">
+
+      <div class="form-header">
+        <div class="form-title">ACCESO AL SISTEMA</div>
+        <div class="form-subtitle">Ingresa tus credenciales para continuar</div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="error-box">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="#f87171" fill="none" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="error-msg">Credenciales incorrectas.</span>
+      </div>
+
+      <!-- Campo: Usuario -->
+      <div class="field">
+        <label class="field-label" for="inp-user">Usuario</label>
+        <div class="field-wrap">
+          <input
+            class="field-input"
+            type="text"
+            id="inp-user"
+            placeholder="Nombre de usuario"
+            autocomplete="username"
+            spellcheck="false"
+          >
+        </div>
+        <div class="field-line"></div>
+      </div>
+
+      <!-- Campo: Contraseña -->
+      <div class="field">
+        <label class="field-label" for="inp-pass">Contraseña</label>
+        <div class="field-wrap">
+          <input
+            class="field-input"
+            type="password"
+            id="inp-pass"
+            placeholder="••••••••••••"
+            autocomplete="current-password"
+          >
+          <button class="eye-toggle" id="eye-btn" type="button" tabindex="-1">
+            <svg id="eye-svg" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-line"></div>
+      </div>
+
+      <!-- Botón -->
+      <button class="btn-submit" id="btn-submit" type="button">
+        <span class="t-idle">INGRESAR</span>
+        <span class="t-loading">VERIFICANDO...</span>
+      </button>
+
+      <!-- Footer -->
+      <div class="form-footer">
+        <div class="footer-brand">StockCloud_EYMS</div>
+        <div class="footer-info">v1.0 &nbsp;·&nbsp; 2026</div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   MODEL — Tabla de usuarios
+   El rol se detecta automáticamente por las credenciales.
+   ============================================================ */
+const Users = [
+  // ── Administradores ──────────────────────────
+  {
+    username: 'Admin',
+    password: 'EYMS/09/01/26',
+    role:     'admin',
+    name:     'Administrador EYMS',
+    store:     null,
+    plan:      null
+  },
+  // ── Clientes ─────────────────────────────────
+  {
+    username: 'Tienda El Sol',
+    password: 'Sol0592',
+    role:     'client',
+    name:     'Tienda El Sol',
+    store:    'Tienda El Sol',
+    plan:     'Pro'
+  },
+  {
+    username: 'Tech Depot',
+    password: 'tech2024',
+    role:     'client',
+    name:     'Tech Depot',
+    store:    'Tech Depot',
+    plan:     'Pro'
+  },
+  {
+    username: 'Mercado Central',
+    password: 'mercado2024',
+    role:     'client',
+    name:     'Mercado Central',
+    store:    'Mercado Central',
+    plan:     'Enterprise'
+  },
+  {
+    username: 'Moda Plus',
+    password: 'moda2024',
+    role:     'client',
+    name:     'Moda Plus',
+    store:    'Moda Plus',
+    plan:     'Básico'
+  },
+  {
+    username: 'Abarrotes Don Luis',
+    password: 'luis2024',
+    role:     'client',
+    name:     'Abarrotes Don Luis',
+    store:    'Abarrotes Don Luis',
+    plan:     'Pro'
+  },
+  {
+    username: 'Casa & Jardín',
+    password: 'casa2024',
+    role:     'client',
+    name:     'Casa & Jardín',
+    store:    'Casa & Jardín',
+    plan:     'Básico'
+  }
+];
+
+/* ============================================================
+   CONTROLLER — Autenticación
+   ============================================================ */
+const Auth = {
+  attempt() {
+    const username = document.getElementById('inp-user').value.trim();
+    const password = document.getElementById('inp-pass').value;
+    const errEl    = document.getElementById('error-box');
+    const msgEl    = document.getElementById('error-msg');
+    const btn      = document.getElementById('btn-submit');
+
+    errEl.classList.remove('show');
+
+    if (!username || !password) {
+      msgEl.textContent = 'Por favor ingresa usuario y contraseña.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    btn.classList.add('loading');
+
+    setTimeout(() => {
+      // Búsqueda case-insensitive en username, contraseña exacta
+      const user = Users.find(
+        u => u.username.toLowerCase() === username.toLowerCase()
+          && u.password === password
+      );
+
+      if (!user) {
+        btn.classList.remove('loading');
+        msgEl.textContent = 'Usuario o contraseña incorrectos.';
+        errEl.classList.add('show');
+        // Shake
+        const fw = document.querySelector('.form-wrap');
+        fw.style.animation = 'none';
+        void fw.offsetWidth;
+        fw.style.animation = 'shakeIt .4s ease';
+        return;
+      }
+
+      // Persistir sesión
+      sessionStorage.setItem('sc_user', JSON.stringify({
+        username: user.username,
+        name:     user.name,
+        role:     user.role,
+        store:    user.store,
+        plan:     user.plan,
+        loginAt:  new Date().toISOString()
+      }));
+
+      // Log de acceso
+      const logs = JSON.parse(localStorage.getItem('sc_access_log') || '[]');
+      logs.unshift({
+        user:    user.name,
+        store:   user.store || 'Sistema',
+        role:    user.role,
+        loginAt: new Date().toLocaleString('es-MX'),
+        ip:      '192.168.1.' + (Math.floor(Math.random() * 200) + 10)
+      });
+      localStorage.setItem('sc_access_log', JSON.stringify(logs.slice(0, 50)));
+
+      // Redirigir según rol
+      window.location.href = user.role === 'admin'
+        ? 'dashboard_admin.html'
+        : 'dashboard_cliente.html';
+
+    }, 950);
+  }
+};
+
+/* ============================================================
+   VIEW — Interacciones UI
+   ============================================================ */
+
+// Enter = login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') Auth.attempt();
+});
+
+// Click botón
+document.getElementById('btn-submit').addEventListener('click', Auth.attempt);
+
+// Mostrar/ocultar contraseña
+document.getElementById('eye-btn').addEventListener('click', () => {
+  const inp = document.getElementById('inp-pass');
+  const svg = document.getElementById('eye-svg');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    svg.innerHTML = `
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>`;
+  } else {
+    inp.type = 'password';
+    svg.innerHTML = `
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>`;
+  }
+});
+
+// Shake keyframe
+const sty = document.createElement('style');
+sty.textContent = `
+  @keyframes shakeIt {
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-9px); }
+    40%{ transform:translateX(9px); }
+    60%{ transform:translateX(-5px); }
+    80%{ transform:translateX(5px); }
+  }`;
+document.head.appendChild(sty);
+
+// Auto-redirect si ya hay sesión activa
+(function checkSession() {
+  const raw = sessionStorage.getItem('sc_user');
+  if (!raw) return;
+  const u = JSON.parse(raw);
+  window.location.href = u.role === 'admin'
+    ? 'dashboard_admin.html'
+    : 'dashboard_cliente.html';
+})();
+</script>
+</body>
+</html>
