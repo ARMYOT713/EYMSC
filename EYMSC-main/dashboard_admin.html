@@ -451,16 +451,27 @@ const Auth = {
   session: null,
   init() {
     const raw = sessionStorage.getItem('sc_user');
-    if (!raw) { location.href = 'index.html'; return false; }
+
+    if (!raw) { 
+      window.location.href = '../index.html'; 
+      return false; 
+    }
+
     const u = JSON.parse(raw);
-    if (u.role !== 'admin') { location.href = 'index.html'; return false; }
+
+    if (u.role !== 'admin') { 
+      window.location.href = '../index.html'; 
+      return false; 
+    }
+
     this.session = u;
     document.getElementById('nav-name').textContent = u.name || u.username;
     return true;
   },
+
   logout() {
     sessionStorage.removeItem('sc_user');
-    location.href = 'index.html';
+    window.location.href = '../index.html';
   }
 };
 
@@ -832,6 +843,6 @@ function showToast(msg) {
 }
 
 if (Auth.init()) AdminCtrl.init();
-</script>
+</scrip>
 </body>
 </html>
