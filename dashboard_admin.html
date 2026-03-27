@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockCloud_EYMS — Administrador</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styleadmin.css">
+
+   
+   
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="login.html">
+    <div class="nav-indicator"></div>
+    Stock<span class="accent">Cloud</span>_EYMS
+  </a>
+  <div class="nav-right">
+    <span class="nav-user">Sesión: <strong id="nav-name">—</strong></span>
+    <div class="role-badge">ADMINISTRADOR</div>
+    <button class="btn-logout" onclick="Auth.logout()">SALIR</button>
+  </div>
+</nav>
+
+
+     SHELL
+     ══════════════════════════════════════ -->
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sb-section">Panel</div>
+    <div class="sb-item active" onclick="showView('overview',    this)">
+      <span class="sb-icon"></span> Resumen Global
+    </div>
+    <div class="sb-item" onclick="showView('comercios', this)">
+      <span class="sb-icon"></span> Comercios <span class="sb-count" id="sb-stores">0</span>
+    </div>
+    <div class="sb-item" onclick="showView('usuarios',  this)">
+      <span class="sb-icon"></span> Usuarios   <span class="sb-count" id="sb-users">0</span>
+    </div>
+    <div class="sb-item" onclick="showView('accesos',   this)">
+      <span class="sb-icon"></span> Log de Accesos
+    </div>
+
+    <div class="sb-section">Sistema</div>
+    <div class="sb-item" onclick="showView('estadisticas', this)">
+      <span class="sb-icon"></span> Estadísticas
+    </div>
+    <div class="sb-item" onclick="showView('planes', this)">
+      <span class="sb-icon"></span> Planes
+    </div>
+    <div class="sb-item" onclick="showView('config', this)">
+      <span class="sb-icon"></span> Configuración
+    </div>
+  </aside>
+
+  
+  <main class="content">
+
+  
+    <div class="view active" id="view-overview">
+
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Panel de <span class="accent">Administración</span></div>
+          <div class="page-sub" id="ov-date">—</div>
+        </div>
+        <div class="hdr-actions">
+          <button class="btn btn-ghost"    onclick="AdminCtrl.exportReport()">Exportar Reporte</button>
+          <button class="btn btn-primary"  onclick="openModal('add-store')">+ Registrar Comercio</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--sc-color:var(--n300)">
+          <div class="stat-lbl">Comercios Activos</div>
+          <div class="stat-val" id="gs-stores">0</div>
+          <div class="stat-delta delta-up" id="gs-stores-d">—</div>
+          <div class="stat-bg-icon">◈</div>
+        </div>
+        <div class="stat-card" style="--sc-color:var(--n200)">
+          <div class="stat-lbl">Usuarios Registrados</div>
+          <div class="stat-val" id="gs-users">0</div>
+          <div class="stat-delta delta-up">En el sistema</div>
+          <div class="stat-bg-icon">◉</div>
+        </div>
+        <div class="stat-card" style="--sc-color:#4dd4a0">
+          <div class="stat-lbl">Productos (Total)</div>
+          <div class="stat-val" style="color:#4dd4a0" id="gs-prods">0</div>
+          <div class="stat-delta delta-up">Entre todos los comercios</div>
+          <div class="stat-bg-icon">▣</div>
+        </div>
+        <div class="stat-card" style="--sc-color:var(--warn)">
+          <div class="stat-lbl">Ingresos Est. / Mes</div>
+          <div class="stat-val" style="color:var(--warn)" id="gs-mrr">$0</div>
+          <div class="stat-delta delta-up">Suscripciones activas</div>
+          <div class="stat-bg-icon">◆</div>
+        </div>
+      </div>
+
+      <!-- Tabla comercios + accesos -->
+      <div class="grid-3-1">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title">Comercios Afiliados</div>
+            <button class="btn btn-ghost btn-sm" onclick="showView('comercios', document.querySelectorAll('.sb-item')[1])">Ver todos</button>
+          </div>
+          <table>
+            <thead><tr><th>Comercio</th><th>Plan</th><th>Productos</th><th>Estado</th></tr></thead>
+            <tbody id="ov-stores-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Últimos Accesos</div></div>
+          <div class="card-body">
+            <div class="alert-list" id="recent-logins"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart + distribución planes -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Actividad del Sistema — 7 Días</div></div>
+          <div class="card-body">
+            <div class="mini-chart" id="admin-chart"></div>
+            <div class="mc-labels"  id="admin-chart-lbl"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Distribución de Planes</div></div>
+          <div class="card-body" id="plan-dist" style="display:flex;flex-direction:column;gap:.75rem"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════
+         COMERCIOS
+         ══════════════════════ -->
+    <div class="view" id="view-comercios">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Comercios <span class="accent">Afiliados</span></div>
+          <div class="page-sub">Establecimientos registrados en la plataforma</div>
+        </div>
+        <div class="hdr-actions">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input type="text" placeholder="Buscar comercio..." id="store-search" oninput="AdminCtrl.filterStores()">
+          </div>
+          <button class="btn btn-primary" onclick="openModal('add-store')">+ Nuevo Comercio</button>
+        </div>
+      </div>
+      <div class="stores-grid" id="stores-grid"></div>
+    </div>
+
+    <!-- ══════════════════════
+         USUARIOS
+         ══════════════════════ -->
+    <div class="view" id="view-usuarios">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Usuarios <span class="accent">del Sistema</span></div>
+          <div class="page-sub">Todos los accesos registrados en StockCloud_EYMS</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-user')">+ Nuevo Usuario</button>
+      </div>
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Usuarios (<span id="users-count">0</span>)</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th><th>Nombre</th><th>Rol</th>
+              <th>Comercio</th><th>Plan</th><th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════
+         LOG DE ACCESOS
+         ══════════════════════ -->
+    <div class="view" id="view-accesos">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Log de <span class="accent">Accesos</span></div>
+          <div class="page-sub">Registro de sesiones iniciadas en el sistema</div>
+        </div>
+        <button class="btn btn-danger-soft btn-sm" onclick="AdminCtrl.clearLog()">Limpiar Log</button>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Historial de Sesiones</div></div>
+        <table>
+          <thead>
+            <tr><th>#</th><th>Usuario</th><th>Comercio / Área</th><th>Fecha y Hora</th><th>IP</th><th>Tipo</th></tr>
+          </thead>
+          <tbody id="log-tbody"></tbody>
+        </table>
+        <div style="padding:.65rem 1.2rem;border-top:1px solid var(--line);font-size:.73rem;color:rgba(77,148,221,.35)" id="log-footer">—</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════
+         ESTADÍSTICAS
+         ══════════════════════ -->
+    <div class="view" id="view-estadisticas">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Estadísticas <span class="accent">Globales</span></div>
+          <div class="page-sub">Métricas de uso de la plataforma</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card" style="--sc-color:var(--n300)">
+          <div class="stat-lbl">Sesiones Registradas</div>
+          <div class="stat-val" id="st-sessions">—</div>
+          <div class="stat-delta">En el log actual</div>
+          <div class="stat-bg-icon">◎</div>
+        </div>
+        <div class="stat-card" style="--sc-color:#4dd4a0">
+          <div class="stat-lbl">Productos en Sistema</div>
+          <div class="stat-val" style="color:#4dd4a0" id="st-prods">—</div>
+          <div class="stat-delta">Total entre comercios</div>
+          <div class="stat-bg-icon">▣</div>
+        </div>
+        <div class="stat-card" style="--sc-color:var(--warn)">
+          <div class="stat-lbl">Planes Premium</div>
+          <div class="stat-val" style="color:var(--warn)" id="st-premium">—</div>
+          <div class="stat-delta">Pro + Enterprise</div>
+          <div class="stat-bg-icon">◆</div>
+        </div>
+        <div class="stat-card" style="--sc-color:var(--n200)">
+          <div class="stat-lbl">MRR Estimado</div>
+          <div class="stat-val" id="st-mrr">—</div>
+          <div class="stat-delta delta-up">Ingresos mensuales</div>
+          <div class="stat-bg-icon">◇</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Productos por Comercio</div></div>
+          <div class="card-body" id="prods-per-store" style="display:flex;flex-direction:column;gap:.8rem"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Alertas Pendientes</div></div>
+          <table>
+            <thead><tr><th>Comercio</th><th>Alertas</th><th>Estado</th></tr></thead>
+            <tbody id="alerts-per-store"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════
+         PLANES
+         ══════════════════════ -->
+    <div class="view" id="view-planes">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Planes de <span class="accent">Servicio</span></div>
+          <div class="page-sub">Estructura de suscripciones disponibles</div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="plan-card">
+          <div class="plan-name">Básico</div>
+          <div class="plan-price">$299 <span>/mes</span></div>
+          <div class="plan-feat">
+            + Hasta 500 productos<br>
+            + 1 usuario<br>
+            + Dashboard básico<br>
+            + Soporte por email<br>
+            — Reportes avanzados<br>
+            — API access
+          </div>
+          <div style="margin-top:.9rem">
+            <span class="badge badge-blue" id="plan-basic-c">0 comercios</span>
+          </div>
+        </div>
+        <div class="plan-card featured">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">$799 <span>/mes</span></div>
+          <div class="plan-feat">
+            + Hasta 2,000 productos<br>
+            + 5 usuarios<br>
+            + Dashboard + Reportes<br>
+            + Soporte prioritario<br>
+            + Exportación CSV/PDF<br>
+            — API access
+          </div>
+          <div style="margin-top:.9rem">
+            <span class="badge badge-teal" id="plan-pro-c">0 comercios</span>
+          </div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-name">Enterprise</div>
+          <div class="plan-price">Custom</div>
+          <div class="plan-feat">
+            + Productos ilimitados<br>
+            + Usuarios ilimitados<br>
+            + Todas las funciones<br>
+            + API access<br>
+            + Soporte 24/7<br>
+            + Capacitación incluida
+          </div>
+          <div style="margin-top:.9rem">
+            <span class="badge badge-warn" id="plan-ent-c">0 comercios</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════
+         CONFIGURACIÓN
+         ══════════════════════ -->
+    <div class="view" id="view-config">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Configuración <span class="accent">del Sistema</span></div>
+          <div class="page-sub">Parámetros globales de StockCloud_EYMS</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">General</div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:.85rem">
+            <div class="form-group">
+              <label class="form-label">Nombre del Sistema</label>
+              <input type="text" class="form-input" value="StockCloud_EYMS">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email de Soporte</label>
+              <input type="email" class="form-input" value="soporte@stockcloud.mx">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Zona Horaria</label>
+              <select class="form-select">
+                <option>America/Mexico_City</option>
+                <option>America/Monterrey</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="showToast('Configuración guardada')">Guardar Cambios</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Seguridad</div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:.85rem">
+            <div class="form-group">
+              <label class="form-label">Tiempo de Sesión (min)</label>
+              <input type="number" class="form-input" value="60">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Intentos máx. de login</label>
+              <input type="number" class="form-input" value="5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Versión</label>
+              <input type="text" class="form-input" value="v1.0.0 — StockCloud_EYMS 2026" readonly style="opacity:.45">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Seguridad actualizada')">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: Agregar Comercio
+     ══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-add-store" onclick="closeOnBg(event,'add-store')">
+  <div class="modal">
+    <div class="modal-title">Registrar Comercio</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del Comercio</label>
+      <input type="text" class="form-input" id="s-name" placeholder="Ej: Tienda La Esperanza">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="s-type">
+          <option>Tienda</option><option>Mercado</option><option>Restaurant</option><option>Farmacia</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ciudad</label>
+        <input type="text" class="form-input" id="s-city" placeholder="Ciudad">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Responsable</label>
+      <input type="text" class="form-input" id="s-owner" placeholder="Nombre del encargado">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Usuario de Acceso</label>
+        <input type="text" class="form-input" id="s-user" placeholder="Nombre de usuario">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" class="form-input" id="s-pass" placeholder="Mín. 6 caracteres">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Plan</label>
+      <select class="form-select" id="s-plan">
+        <option>Básico</option><option>Pro</option><option>Enterprise</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost"   onclick="closeModal('add-store')">Cancelar</button>
+      <button class="btn btn-primary" onclick="AdminCtrl.addStore()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: Agregar Usuario
+     ══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-add-user" onclick="closeOnBg(event,'add-user')">
+  <div class="modal">
+    <div class="modal-title">Nuevo Usuario</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nombre Completo</label>
+        <input type="text" class="form-input" id="u-name" placeholder="Nombre">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Usuario</label>
+        <input type="text" class="form-input" id="u-user" placeholder="usuario">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" class="form-input" id="u-pass" placeholder="••••••">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rol</label>
+        <select class="form-select" id="u-role">
+          <option value="client">Cliente</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Comercio Asignado</label>
+      <select class="form-select" id="u-store"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost"   onclick="closeModal('add-user')">Cancelar</button>
+      <button class="btn btn-primary" onclick="AdminCtrl.addUser()">Crear Usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: Detalle Comercio
+     ══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-store-detail" onclick="closeOnBg(event,'store-detail')">
+  <div class="modal">
+    <div class="modal-title" id="detail-title">Detalle</div>
+    <div id="detail-body" style="font-size:.84rem;color:rgba(137,191,240,.7);line-height:2"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft btn-sm" id="detail-del-btn">Eliminar Comercio</button>
+      <button class="btn btn-ghost" onclick="closeModal('store-detail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+/* ============================================================
+   AUTH GUARD
+   ============================================================ */
+const Auth = {
+  session: null,
+  init() {
+    const raw = sessionStorage.getItem('sc_user');
+    if (!raw) { location.href = 'login.html'; return false; }
+    const u = JSON.parse(raw);
+    if (u.role !== 'admin') { location.href = 'login.html'; return false; }
+    this.session = u;
+    document.getElementById('nav-name').textContent = u.name || u.username;
+    return true;
+  },
+  logout() {
+    sessionStorage.removeItem('sc_user');
+    location.href = 'login.html';
+  }
+};
+
+/* ============================================================
+   MODEL
+   ============================================================ */
+const AdminModel = {
+  stores: [
+    { id:1, name:'Tienda El Sol',      type:'Tienda',   city:'Toluca',       owner:'Juan Pérez',   plan:'Pro',        active:true },
+    { id:2, name:'Mercado Central',    type:'Mercado',  city:'Metepec',      owner:'María García', plan:'Enterprise', active:true },
+    { id:3, name:'Tech Depot',         type:'Tienda',   city:'Toluca',       owner:'Carlos Ríos',  plan:'Pro',        active:true },
+    { id:4, name:'Moda Plus',          type:'Tienda',   city:'Lerma',        owner:'Ana López',    plan:'Básico',     active:true },
+    { id:5, name:'Abarrotes Don Luis', type:'Tienda',   city:'Zinacantepec', owner:'Luis Torres',  plan:'Pro',        active:true },
+    { id:6, name:'Casa & Jardín',      type:'Tienda',   city:'Toluca',       owner:'Rosa Vega',    plan:'Básico',     active:true },
+  ],
+  users: [
+    { id:'a1',   username:'Admin',               name:'Administrador EYMS', role:'admin',  store:null,                plan:null        },
+    { id:'c1',   username:'Tienda El Sol',        name:'Juan Pérez',         role:'client', store:'Tienda El Sol',      plan:'Pro'       },
+    { id:'c2',   username:'Tech Depot',           name:'Carlos Ríos',        role:'client', store:'Tech Depot',         plan:'Pro'       },
+    { id:'c3',   username:'Mercado Central',      name:'María García',       role:'client', store:'Mercado Central',    plan:'Enterprise'},
+    { id:'c4',   username:'Moda Plus',            name:'Ana López',          role:'client', store:'Moda Plus',          plan:'Básico'    },
+    { id:'c5',   username:'Abarrotes Don Luis',   name:'Luis Torres',        role:'client', store:'Abarrotes Don Luis', plan:'Pro'       },
+    { id:'c6',   username:'Casa & Jardín',        name:'Rosa Vega',          role:'client', store:'Casa & Jardín',      plan:'Básico'    },
+  ],
+  planPrices: { 'Básico':299, 'Pro':799, 'Enterprise':2500 },
+  nextId: 7,
+
+  storeInitial(name) { return name.substring(0,2).toUpperCase(); },
+  getProducts(store) {
+    const r = localStorage.getItem('sc_products_' + store);
+    return r ? JSON.parse(r) : [];
+  },
+  getAlerts(store) {
+    return this.getProducts(store).filter(p => p.stock <= p.min).length;
+  },
+  totalProducts() {
+    return this.stores.reduce((s, st) => s + this.getProducts(st.name).length, 0);
+  },
+  getMRR() {
+    return this.stores.reduce((s, st) => s + (this.planPrices[st.plan] || 0), 0);
+  },
+  getLog() {
+    return JSON.parse(localStorage.getItem('sc_access_log') || '[]');
+  }
+};
+
+/* ============================================================
+   CONTROLLER
+   ============================================================ */
+const AdminCtrl = {
+  filteredStores: null,
+
+  init() {
+    document.getElementById('ov-date').textContent =
+      'Sistema activo · ' + new Date().toLocaleString('es-MX');
+    AdminView.renderAll();
+  },
+
+  addStore() {
+    const name = document.getElementById('s-name').value.trim();
+    const user = document.getElementById('s-user').value.trim();
+    const pass = document.getElementById('s-pass').value.trim();
+    if (!name || !user || !pass) { showToast('Completa nombre, usuario y contraseña'); return; }
+    if (pass.length < 6) { showToast('La contraseña debe tener mínimo 6 caracteres'); return; }
+
+    AdminModel.stores.push({
+      id: AdminModel.nextId++,
+      name,
+      type:  document.getElementById('s-type').value,
+      city:  document.getElementById('s-city').value  || '—',
+      owner: document.getElementById('s-owner').value || '—',
+      plan:  document.getElementById('s-plan').value,
+      active: true
+    });
+    AdminModel.users.push({
+      id:       'c' + AdminModel.nextId,
+      username:  user,
+      name:      document.getElementById('s-owner').value || user,
+      role:      'client',
+      store:      name,
+      plan:       document.getElementById('s-plan').value
+    });
+
+    this.filteredStores = null;
+    closeModal('add-store');
+    AdminView.renderAll();
+    showToast('Comercio registrado: ' + name);
+    ['s-name','s-city','s-owner','s-user','s-pass'].forEach(i => document.getElementById(i).value = '');
+  },
+
+  addUser() {
+    const name  = document.getElementById('u-name').value.trim();
+    const uname = document.getElementById('u-user').value.trim();
+    const pass  = document.getElementById('u-pass').value.trim();
+    if (!name || !uname || !pass) { showToast('Completa todos los campos'); return; }
+
+    AdminModel.users.push({
+      id:       'u' + AdminModel.nextId++,
+      username:  uname, name,
+      role:      document.getElementById('u-role').value,
+      store:     document.getElementById('u-store').value || null,
+      plan:      'Pro'
+    });
+    closeModal('add-user');
+    AdminView.renderUsers();
+    AdminView.updateSidebar();
+    showToast('Usuario creado: ' + name);
+  },
+
+  openStoreDetail(id) {
+    const s = AdminModel.stores.find(x => x.id === id);
+    const prods  = AdminModel.getProducts(s.name).length;
+    const alerts = AdminModel.getAlerts(s.name);
+    document.getElementById('detail-title').textContent = s.name;
+    document.getElementById('detail-body').innerHTML = `
+      <table width="100%">
+        <tr><td style="color:rgba(77,148,221,.4);width:45%">Tipo</td><td>${s.type}</td></tr>
+        <tr><td style="color:rgba(77,148,221,.4)">Ciudad</td><td>${s.city}</td></tr>
+        <tr><td style="color:rgba(77,148,221,.4)">Responsable</td><td>${s.owner}</td></tr>
+        <tr><td style="color:rgba(77,148,221,.4)">Plan</td><td><span class="badge ${planBadgeCls(s.plan)}">${s.plan}</span></td></tr>
+        <tr><td style="color:rgba(77,148,221,.4)">Productos</td><td>${prods}</td></tr>
+        <tr><td style="color:rgba(77,148,221,.4)">Alertas</td><td style="color:${alerts>0?'var(--warn)':'#4dd4a0'}">${alerts}</td></tr>
+      </table>`;
+    document.getElementById('detail-del-btn').onclick = () => this.deleteStore(id);
+    openModal('store-detail');
+  },
+
+  deleteStore(id) {
+    const s = AdminModel.stores.find(x => x.id === id);
+    if (!confirm('¿Eliminar "' + s.name + '"? Esta acción no se puede deshacer.')) return;
+    AdminModel.stores.splice(AdminModel.stores.indexOf(s), 1);
+    const ui = AdminModel.users.findIndex(u => u.store === s.name);
+    if (ui > -1) AdminModel.users.splice(ui, 1);
+    this.filteredStores = null;
+    closeModal('store-detail');
+    AdminView.renderAll();
+    showToast('Comercio eliminado: ' + s.name);
+  },
+
+  filterStores() {
+    const q = document.getElementById('store-search').value.toLowerCase();
+    this.filteredStores = q
+      ? AdminModel.stores.filter(s => s.name.toLowerCase().includes(q) || s.owner.toLowerCase().includes(q))
+      : null;
+    AdminView.renderStores();
+  },
+
+  clearLog() {
+    if (!confirm('¿Limpiar todo el historial de accesos?')) return;
+    localStorage.removeItem('sc_access_log');
+    AdminView.renderLog();
+    showToast('Log limpiado');
+  },
+
+  exportReport() { showToast('Generando reporte global... (demo)'); }
+};
+
+/* ============================================================
+   VIEW
+   ============================================================ */
+const AdminView = {
+  renderAll() {
+    this.renderOverviewStats();
+    this.renderOverviewStores();
+    this.renderRecentLogins();
+    this.renderChart();
+    this.renderPlanDist();
+    this.renderStores();
+    this.renderUsers();
+    this.renderLog();
+    this.renderStatsView();
+    this.renderPlans();
+    this.updateSidebar();
+  },
+
+  renderOverviewStats() {
+    const s = AdminModel.stores.length;
+    const u = AdminModel.users.filter(x => x.role === 'client').length;
+    const p = AdminModel.totalProducts();
+    const m = AdminModel.getMRR();
+    document.getElementById('gs-stores').textContent   = s;
+    document.getElementById('gs-stores-d').textContent = s + ' activos en la plataforma';
+    document.getElementById('gs-users').textContent    = u;
+    document.getElementById('gs-prods').textContent    = p;
+    document.getElementById('gs-mrr').textContent      = '$' + m.toLocaleString('es-MX');
+  },
+
+  renderOverviewStores() {
+    document.getElementById('ov-stores-tbody').innerHTML =
+      AdminModel.stores.slice(0,6).map(s => {
+        const p = AdminModel.getProducts(s.name).length;
+        return `<tr>
+          <td class="td-main">${s.name}<div class="td-muted">${s.city}</div></td>
+          <td><span class="badge ${planBadgeCls(s.plan)}">${s.plan}</span></td>
+          <td>${p}</td>
+          <td><span class="badge badge-ok">Activo</span></td>
+        </tr>`;
+      }).join('');
+  },
+
+  renderRecentLogins() {
+    const log = AdminModel.getLog().slice(0,4);
+    document.getElementById('recent-logins').innerHTML = log.length
+      ? log.map(l => `
+        <div class="alert-item ${l.role==='admin'?'warn-item':''}">
+          <div class="alert-dot" style="background:${l.role==='admin'?'var(--warn)':'var(--n400)'}"></div>
+          <div>
+            <div class="alert-text" style="font-weight:500">${l.user}</div>
+            <div class="alert-meta">${l.loginAt} · ${l.ip}</div>
+          </div>
+        </div>`).join('')
+      : '<div style="font-size:.78rem;color:rgba(77,148,221,.3);padding:.5rem 0;text-align:center">Sin accesos registrados</div>';
+  },
+
+  renderChart() {
+    const data = [12,18,9,24,16,22,14];
+    const days = ['LU','MA','MI','JU','VI','SA','DO'];
+    const max  = Math.max(...data);
+    document.getElementById('admin-chart').innerHTML = data.map((v,i) =>
+      `<div class="mc-bar${i===6?' hi':''}" style="height:${Math.round((v/max)*100)}%"></div>`).join('');
+    document.getElementById('admin-chart-lbl').innerHTML = days.map(d =>
+      `<div class="mc-lbl">${d}</div>`).join('');
+  },
+
+  renderPlanDist() {
+    const cnt = {'Básico':0,'Pro':0,'Enterprise':0};
+    AdminModel.stores.forEach(s => cnt[s.plan] = (cnt[s.plan]||0)+1);
+    const total = AdminModel.stores.length || 1;
+    const colors = ['var(--n300)','#4dd4a0','var(--warn)'];
+    document.getElementById('plan-dist').innerHTML =
+      Object.entries(cnt).map(([plan,n],i) => `
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;font-size:.8rem">
+            <span style="color:rgba(137,191,240,.7)">${plan}</span>
+            <span style="color:rgba(77,148,221,.4)">${n} comercio${n!==1?'s':''}</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${Math.round(n/total*100)}%;background:${colors[i]}"></div>
+          </div>
+        </div>`).join('');
+  },
+
+  renderStores() {
+    const list = AdminCtrl.filteredStores || AdminModel.stores;
+    document.getElementById('stores-grid').innerHTML = list.map(s => {
+      const prods  = AdminModel.getProducts(s.name).length;
+      const alerts = AdminModel.getAlerts(s.name);
+      return `
+        <div class="store-card" onclick="AdminCtrl.openStoreDetail(${s.id})">
+          <div class="store-initial">${AdminModel.storeInitial(s.name)}</div>
+          <div class="store-name">${s.name}</div>
+          <div class="store-meta">${s.type} · ${s.city} · ${s.owner}</div>
+          <div class="store-stats">
+            <div class="store-stat"><span>${prods}</span> productos</div>
+            <div class="store-stat"><span style="color:${alerts>0?'var(--warn)':'#4dd4a0'}">${alerts}</span> alertas</div>
+            <span class="badge ${planBadgeCls(s.plan)}">${s.plan}</span>
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  renderUsers() {
+    const uSel = document.getElementById('u-store');
+    if (uSel) {
+      uSel.innerHTML = AdminModel.stores.map(s =>
+        `<option value="${s.name}">${s.name}</option>`).join('');
+    }
+    document.getElementById('users-count').textContent = AdminModel.users.length;
+    document.getElementById('users-tbody').innerHTML = AdminModel.users.map(u => `
+      <tr>
+        <td class="td-main">${u.username}</td>
+        <td>${u.name}</td>
+        <td><span class="${u.role==='admin'?'log-role-admin':'log-role-client'}">${u.role==='admin'?'ADMIN':'CLIENTE'}</span></td>
+        <td class="td-muted">${u.store||'—'}</td>
+        <td>${u.plan?`<span class="badge ${planBadgeCls(u.plan)}">${u.plan}</span>`:'—'}</td>
+        <td>${u.role!=='admin'
+          ? `<button class="btn btn-danger-soft btn-sm" onclick="AdminCtrl.deleteUser('${u.id}')">Eliminar</button>`
+          : '<span style="color:rgba(77,148,221,.25);font-size:.72rem">Protegido</span>'}</td>
+      </tr>`).join('');
+  },
+
+  renderLog() {
+    const log = AdminModel.getLog();
+    document.getElementById('log-tbody').innerHTML = log.length
+      ? log.map((l,i) => `
+        <tr>
+          <td class="td-muted">${i+1}</td>
+          <td class="td-main">${l.user}</td>
+          <td class="td-muted">${l.store}</td>
+          <td class="td-muted" style="font-size:.75rem">${l.loginAt}</td>
+          <td class="td-muted" style="font-family:monospace;font-size:.74rem">${l.ip}</td>
+          <td><span class="${l.role==='admin'?'log-role-admin':'log-role-client'}">${l.role==='admin'?'ADMIN':'CLIENTE'}</span></td>
+        </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:1.75rem;color:rgba(77,148,221,.25);font-size:.8rem">Sin accesos registrados. Inicia sesión desde el login para generar entradas.</td></tr>';
+    document.getElementById('log-footer').textContent =
+      log.length ? log.length + ' registro' + (log.length!==1?'s':'') + ' en total' : '—';
+  },
+
+  renderStatsView() {
+    const log  = AdminModel.getLog();
+    const p    = AdminModel.totalProducts();
+    const prem = AdminModel.stores.filter(s => s.plan !== 'Básico').length;
+    const mrr  = AdminModel.getMRR();
+    document.getElementById('st-sessions').textContent = log.length;
+    document.getElementById('st-prods').textContent    = p;
+    document.getElementById('st-premium').textContent  = prem;
+    document.getElementById('st-mrr').textContent      = '$' + mrr.toLocaleString('es-MX');
+
+    document.getElementById('prods-per-store').innerHTML =
+      AdminModel.stores.map(s => {
+        const n = AdminModel.getProducts(s.name).length;
+        return `
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;font-size:.8rem">
+              <span style="color:rgba(137,191,240,.7)">${s.name}</span>
+              <span style="color:rgba(77,148,221,.4)">${n}</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100,Math.round(n/200*100))}%"></div></div>
+          </div>`;
+      }).join('');
+
+    document.getElementById('alerts-per-store').innerHTML =
+      AdminModel.stores.map(s => {
+        const a = AdminModel.getAlerts(s.name);
+        return `<tr>
+          <td class="td-main">${s.name}</td>
+          <td style="font-weight:600;color:${a>0?'var(--warn)':'#4dd4a0'}">${a}</td>
+          <td><span class="badge ${a>0?'badge-warn':'badge-ok'}">${a>0?'Atención':'OK'}</span></td>
+        </tr>`;
+      }).join('');
+  },
+
+  renderPlans() {
+    const cnt = {'Básico':0,'Pro':0,'Enterprise':0};
+    AdminModel.stores.forEach(s => cnt[s.plan] = (cnt[s.plan]||0)+1);
+    document.getElementById('plan-basic-c').textContent = cnt['Básico']     + ' comercios';
+    document.getElementById('plan-pro-c').textContent   = cnt['Pro']        + ' comercios';
+    document.getElementById('plan-ent-c').textContent   = cnt['Enterprise'] + ' comercio' + (cnt['Enterprise']!==1?'s':'');
+  },
+
+  updateSidebar() {
+    document.getElementById('sb-stores').textContent = AdminModel.stores.length;
+    document.getElementById('sb-users').textContent  = AdminModel.users.length;
+  }
+};
+
+AdminCtrl.deleteUser = function(id) {
+  const u = AdminModel.users.find(x => x.id === id);
+  if (!u || !confirm('¿Eliminar usuario "' + u.name + '"?')) return;
+  AdminModel.users.splice(AdminModel.users.indexOf(u), 1);
+  AdminView.renderUsers();
+  AdminView.updateSidebar();
+  showToast('Usuario eliminado: ' + u.name);
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function planBadgeCls(plan) {
+  if (plan === 'Enterprise') return 'badge-warn';
+  if (plan === 'Pro')        return 'badge-teal';
+  return 'badge-blue';
+}
+
+function showView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function openModal(name)  { document.getElementById('modal-' + name).classList.add('open'); }
+function closeModal(name) { document.getElementById('modal-' + name).classList.remove('open'); }
+function closeOnBg(e, name) { if (e.target === e.currentTarget) closeModal(name); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+if (Auth.init()) AdminCtrl.init();
+</script>
+</body>
+</html>
