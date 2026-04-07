@@ -10,14 +10,14 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { nombre, sku, categoria, unidad, stock, min, precio, comercio_id } = req.body;
+    const { nombre, sku, categoria, unidad, stock, stock_min, precio, comercio_id } = req.body;
 
     try {
       const result = await pool.query(
-        `INSERT INTO productos (nombre, sku, categoria, unidad, stock, min, precio, comercio_id, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        `INSERT INTO productos (nombre, sku, categoria, unidad, stock, stock_min, precio, comercio_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [nombre, sku, categoria, unidad, parseInt(stock), parseInt(min), parseFloat(precio), comercio_id || 1]
+        [nombre, sku, categoria, unidad, parseInt(stock), parseInt(stock_min), parseFloat(precio), comercio_id || 1]
       );
       return res.status(200).json({ success: true, producto: result.rows[0] });
     } catch (error) {
@@ -37,5 +37,3 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 }
-
-// test sync
