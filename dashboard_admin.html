@@ -151,7 +151,7 @@
           <div class="page-title">Usuarios <span class="accent">del Sistema</span></div>
           <div class="page-sub">Todos los accesos registrados en StockCloud_EYMS</div>
         </div>
-        <button class="btn btn-primary" onclick="openModal('add-user')">+ Nuevo Usuario</button>
+       <button class="btn btn-primary" onclick="openAddUserModal()">+ Nuevo Usuario</button>
       </div>
       <div class="card">
         <div class="card-hdr">
@@ -545,7 +545,7 @@ const AdminCtrl = {
     ['s-name','s-city','s-owner','s-user','s-pass'].forEach(i => document.getElementById(i).value = '');
   },
 
- async addUser() {
+async addUser() {
   const name  = document.getElementById('u-name').value.trim();
   const uname = document.getElementById('u-user').value.trim();
   const pass  = document.getElementById('u-pass').value.trim();
@@ -569,6 +569,22 @@ const AdminCtrl = {
     showToast('Error: ' + err.message);
   }
 },
+
+openAddUserModal: async function() {
+  try {
+    const res = await fetch('https://eymsc.vercel.app/api/comercios');
+    const comercios = await res.json();
+    const uSel = document.getElementById('u-store');
+    uSel.innerHTML = comercios.map(c => 
+      `<option value="${c.id}">${c.nombre}</option>`
+    ).join('');
+  } catch(e) {
+    console.error('Error cargando comercios:', e);
+  }
+  openModal('add-user');
+},
+
+
 
   openStoreDetail(id) {
     const s = AdminModel.stores.find(x => x.id === id);
