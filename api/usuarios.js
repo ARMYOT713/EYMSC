@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import pool from '../db/connection.js';
 
 export default async function handler(req, res) {
@@ -17,13 +18,18 @@ export default async function handler(req, res) {
     }
 
     try {
+      // 🔥 AQUÍ ESTÁ EL CAMBIO IMPORTANTE
+      const hashedPassword = await bcrypt.hash(contrasena, 10);
+
       const result = await pool.query(
         `INSERT INTO usuarios (username, nombre, password_hash, rol, comercio_id)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, nombre, username, rol`,
-        [usuario, nombre, contrasena, rol, comercio_id || null]
+        [usuario, nombre, hashedPassword, rol, comercio_id || null]
       );
+
       return res.status(200).json({ success: true, usuario: result.rows[0] });
+
     } catch (error) {
       console.error('Error creando usuario:', error);
       return res.status(500).json({ error: error.message });
