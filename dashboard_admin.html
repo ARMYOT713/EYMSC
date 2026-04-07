@@ -550,7 +550,7 @@ const AdminCtrl = {
   const uname = document.getElementById('u-user').value.trim();
   const pass  = document.getElementById('u-pass').value.trim();
   const rol   = document.getElementById('u-role').value;
-  const comercio_id = document.getElementById('u-store').value || 1;
+  const comercio_id = parseInt(document.getElementById('u-store').value) || null;
 
   if (!name || !uname || !pass) { showToast('Completa todos los campos'); return; }
 
@@ -720,10 +720,10 @@ const AdminView = {
   },
 
   renderUsers() {
-    const uSel = document.getElementById('u-store');
+   const comercio_id = parseInt(document.getElementById('u-store').value) || null;
     if (uSel) {
       uSel.innerHTML = AdminModel.stores.map(s =>
-        `<option value="${s.name}">${s.name}</option>`).join('');
+        `<option value="${s.id}">${s.name}</option>`).join('');
     }
     document.getElementById('users-count').textContent = AdminModel.users.length;
     document.getElementById('users-tbody').innerHTML = AdminModel.users.map(u => `
