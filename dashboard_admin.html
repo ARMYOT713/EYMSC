@@ -736,7 +736,6 @@ const AdminView = {
   },
 
   renderUsers() {
-   const comercio_id = parseInt(document.getElementById('u-store').value) || null;
     if (uSel) {
       uSel.innerHTML = AdminModel.stores.map(s =>
         `<option value="${s.id}">${s.name}</option>`).join('');
