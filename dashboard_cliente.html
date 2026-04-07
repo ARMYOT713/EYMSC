@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockCloud_EYMS — Mi Inventario</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/stylecliente.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-indicator"></div>
+    Stock<span class="accent">Cloud</span>_EYMS
+  </a>
+  <div class="nav-right">
+    <span class="nav-user">Hola, <strong id="nav-name">—</strong></span>
+    <div class="store-badge" id="nav-store">—</div>
+    <button class="btn-logout" onclick="Auth.logout()">SALIR</button>
+  </div>
+</nav>
+
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sb-section">Mi Comercio</div>
+    <div class="sb-item active" onclick="showView('dashboard',   this)">
+      <span class="sb-icon"></span> Dashboard
+    </div>
+    <div class="sb-item" onclick="showView('inventario', this)">
+      <span class="sb-icon"></span> Inventario <span class="sb-count" id="sb-prod-count">0</span>
+    </div>
+    <div class="sb-item" onclick="showView('alertas',    this)">
+      <span class="sb-icon"></span> Alertas <span class="sb-count warn" id="sb-alert-count">0</span>
+    </div>
+
+    <div class="sb-section">Operaciones</div>
+    <div class="sb-item" onclick="showView('movimientos', this)">
+      <span class="sb-icon"></span> Movimientos
+    </div>
+
+    <div class="sb-section">Cuenta</div>
+    <div class="sb-item" onclick="showView('perfil', this)">
+      <span class="sb-icon"></span> Mi Perfil
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <div class="view active" id="view-dashboard">
+
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Dashboard — <span class="accent" id="dh-store">—</span></div>
+          <div class="page-sub" id="dh-plan">Plan — · inventario en tiempo real</div>
+        </div>
+        <div class="hdr-actions">
+          <button class="btn btn-ghost"   onclick="ClientCtrl.export()">Exportar</button>
+          <button class="btn btn-primary" onclick="openModal('add-product')">+ Nuevo Producto</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card" style="--sc-color:var(--n300)">
+          <div class="stat-lbl">Productos Totales</div>
+          <div class="stat-val" id="s-total">0</div>
+          <div class="stat-delta delta-up" id="s-total-d">—</div>
+          <div class="stat-bg-icon">▣</div>
+        </div>
+        <div class="stat-card" style="--sc-color:var(--warn)">
+          <div class="stat-lbl">Stock Bajo / Agotado</div>
+          <div class="stat-val" style="color:var(--warn)" id="s-low">0</div>
+          <div class="stat-delta delta-dn">Requieren atención</div>
+          <div class="stat-bg-icon">◬</div>
+        </div>
+        <div class="stat-card" style="--sc-color:#4dd4a0">
+          <div class="stat-lbl">Categorías</div>
+          <div class="stat-val" style="color:#4dd4a0" id="s-cats">0</div>
+          <div class="stat-delta">En tu inventario</div>
+          <div class="stat-bg-icon">◇</div>
+        </div>
+        <div class="stat-card" style="--sc-color:var(--n200)">
+          <div class="stat-lbl">Valor Total Est.</div>
+          <div class="stat-val" id="s-value">$0</div>
+          <div class="stat-delta delta-up">Stock actual</div>
+          <div class="stat-bg-icon">◆</div>
+        </div>
+      </div>
+
+      <div class="grid-3-1">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title">Últimos Productos</div>
+            <button class="btn btn-ghost btn-sm" onclick="showView('inventario', document.querySelectorAll('.sb-item')[1])">Ver todos</button>
+          </div>
+          <table>
+            <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Estado</th></tr></thead>
+            <tbody id="recent-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Alertas Activas</div></div>
+          <div class="card-body">
+            <div class="alert-list" id="dash-alerts"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title">Movimientos — 7 Días</div>
+            <div style="display:flex;gap:.5rem">
+              <span class="badge badge-blue">Entradas</span>
+              <span class="badge badge-ok">Salidas</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="mini-chart" id="chart-bars"></div>
+            <div class="mc-labels"  id="chart-lbls"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Por Categoría</div></div>
+          <div class="card-body" id="cat-dist" style="display:flex;flex-direction:column;gap:.75rem"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="view" id="view-inventario">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Inventario <span class="accent">Completo</span></div>
+          <div class="page-sub">Gestión de productos y stock</div>
+        </div>
+        <div class="hdr-actions">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input type="text" placeholder="Buscar producto o SKU..." id="search-inp" oninput="ClientCtrl.filter()">
+          </div>
+          <select class="form-select" style="width:auto;padding:.45rem .8rem;clip-path:none" id="filter-cat" onchange="ClientCtrl.filter()">
+            <option value="">Todas las categorías</option>
+            <option>Electrónica</option><option>Ropa</option>
+            <option>Alimentos</option><option>Hogar</option><option>Papelería</option>
+          </select>
+          <button class="btn btn-primary" onclick="openModal('add-product')">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Productos (<span id="inv-count">0</span>)</div>
+          <div style="display:flex;gap:.4rem">
+            <button class="btn btn-ghost btn-sm"        onclick="ClientCtrl.bulkRestock()">Reabastecer selección</button>
+            <button class="btn btn-danger-soft btn-sm"  onclick="ClientCtrl.bulkDelete()">Eliminar selección</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox" id="chk-all" onchange="ClientCtrl.toggleAll(this)"></th>
+              <th>Producto / SKU</th><th>Categoría</th>
+              <th>Stock</th><th>Precio</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="inv-tbody"></tbody>
+        </table>
+        <div style="padding:.65rem 1.2rem;border-top:1px solid var(--line);font-size:.73rem;color:rgba(77,148,221,.35);display:flex;justify-content:space-between;align-items:center">
+          <span id="inv-footer">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-alertas">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Alertas <span class="accent">de Stock</span></div>
+          <div class="page-sub">Productos que requieren atención inmediata</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Productos con Stock Bajo o Agotado</div></div>
+        <table>
+          <thead>
+            <tr><th>Producto</th><th>SKU</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Estado</th><th>Acción</th></tr>
+          </thead>
+          <tbody id="alerts-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="view" id="view-movimientos">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Movimientos <span class="accent">de Inventario</span></div>
+          <div class="page-sub">Historial de entradas y salidas</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-movement')">+ Registrar Movimiento</button>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Historial</div></div>
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Responsable</th></tr>
+          </thead>
+          <tbody id="mov-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="view" id="view-perfil">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Mi <span class="accent">Perfil</span></div>
+          <div class="page-sub">Información de cuenta y plan contratado</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Datos de la Cuenta</div></div>
+          <div class="card-body" id="profile-body"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Plan Contratado</div></div>
+          <div class="card-body" id="plan-body"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: Agregar Producto -->
+<div class="modal-overlay" id="modal-add-product" onclick="closeOnBg(event,'add-product')">
+  <div class="modal">
+    <div class="modal-title">Agregar Producto</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-input" id="p-name" placeholder="Ej: Laptop HP 15">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SKU</label>
+        <input type="text" class="form-input" id="p-sku" placeholder="LP-001">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-select" id="p-cat">
+          <option>Electrónica</option><option>Ropa</option>
+          <option>Alimentos</option><option>Hogar</option><option>Papelería</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unidad</label>
+        <select class="form-select" id="p-unit">
+          <option>pza</option><option>kg</option><option>lt</option><option>caja</option><option>par</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Stock Inicial</label>
+        <input type="number" class="form-input" id="p-stock" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stock Mínimo</label>
+        <input type="number" class="form-input" id="p-min" placeholder="10" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Precio Unitario ($)</label>
+      <input type="number" class="form-input" id="p-price" placeholder="0.00" min="0" step="0.01">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost"   onclick="closeModal('add-product')">Cancelar</button>
+      <button class="btn btn-primary" onclick="ClientCtrl.addProduct()">Guardar Producto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Editar Stock -->
+<div class="modal-overlay" id="modal-edit" onclick="closeOnBg(event,'edit')">
+  <div class="modal">
+    <div class="modal-title">Editar Producto</div>
+    <div class="modal-sub" id="edit-name">—</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Stock Actual</label>
+        <input type="number" class="form-input" id="edit-stock" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stock Mínimo</label>
+        <input type="number" class="form-input" id="edit-min" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Precio Unitario ($)</label>
+      <input type="number" class="form-input" id="edit-price" min="0" step="0.01">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost"   onclick="closeModal('edit')">Cancelar</button>
+      <button class="btn btn-primary" onclick="ClientCtrl.saveEdit()">Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Movimiento -->
+<div class="modal-overlay" id="modal-add-movement" onclick="closeOnBg(event,'add-movement')">
+  <div class="modal">
+    <div class="modal-title">Registrar Movimiento</div>
+    <div class="form-group">
+      <label class="form-label">Producto</label>
+      <select class="form-select" id="mov-prod"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="mov-type">
+          <option value="entrada">Entrada</option>
+          <option value="salida">Salida</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cantidad</label>
+        <input type="number" class="form-input" id="mov-qty" placeholder="1" min="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost"   onclick="closeModal('add-movement')">Cancelar</button>
+      <button class="btn btn-primary" onclick="ClientCtrl.addMovement()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+
+const Auth = {
+  session: null,
+  init() {
+    const raw = sessionStorage.getItem('sc_user');
+    // Si no hay sesión, redirige al inicio de forma segura
+    if (!raw) { 
+        window.location.replace('/'); 
+        return false; 
+    }
+    
+    const u = JSON.parse(raw);
+    if (u.role !== 'client') { 
+        window.location.replace('/'); 
+        return false; 
+    }
+    
+    this.session = u;
+    document.getElementById('nav-name').textContent  = u.name;
+    document.getElementById('nav-store').textContent = u.store;
+    return true;
+  },
+
+  // ESTA ES LA FUNCIÓN QUE CORREGIMOS PARA EVITAR EL ERROR 404
+  logout() {
+    // 1. Limpiamos TODA la sesión por seguridad
+    sessionStorage.clear();
+    
+    // 2. Usamos replace('/') para que Vercel encuentre la raíz
+    // y el usuario no pueda regresar con el botón "atrás" del navegador
+    window.location.replace('/');
+  }
+};
+
+const ClientModel = {
+  editingId: null,
+  nextId: 11,
+
+  seedData: {
+    'Tienda El Sol': [
+      { id:1, name:'Cuaderno Profesional', sku:'PA-055', cat:'Papelería',  stock:0,   min:20, price:25,    unit:'pza'  },
+      { id:2, name:'Bolígrafo Azul x12',   sku:'PA-012', cat:'Papelería',  stock:8,   min:15, price:45,    unit:'caja' },
+      { id:3, name:'Folder Manila',         sku:'PA-033', cat:'Papelería',  stock:60,  min:10, price:12,    unit:'pza'  },
+      { id:4, name:'Corrector Líquido',     sku:'PA-044', cat:'Papelería',  stock:25,  min:10, price:18,    unit:'pza'  },
+      { id:5, name:'Resma de Papel A4',     sku:'PA-060', cat:'Papelería',  stock:120, min:20, price:95,    unit:'pza'  },
+    ],
+    'Tech Depot': [
+      { id:1, name:'Laptop HP 15',         sku:'LP-001', cat:'Electrónica', stock:45, min:10, price:12500, unit:'pza' },
+      { id:2, name:'Monitor 24"',          sku:'LP-002', cat:'Electrónica', stock:12, min:5,  price:4200,  unit:'pza' },
+      { id:3, name:'Teclado Mecánico',     sku:'LP-034', cat:'Electrónica', stock:22, min:8,  price:1800,  unit:'pza' },
+      { id:4, name:'Mouse Inalámbrico',    sku:'LP-022', cat:'Electrónica', stock:5,  min:10, price:380,   unit:'pza' },
+      { id:5, name:'Headset Gamer',        sku:'LP-089', cat:'Electrónica', stock:18, min:5,  price:950,   unit:'pza' },
+    ],
+    'Mercado Central': [
+      { id:1, name:'Aceite de Oliva 1L',   sku:'AL-088', cat:'Alimentos', stock:150, min:30, price:120, unit:'lt'  },
+      { id:2, name:'Arroz 5kg',            sku:'AL-112', cat:'Alimentos', stock:200, min:50, price:85,  unit:'kg'  },
+      { id:3, name:'Frijol Negro 1kg',     sku:'AL-201', cat:'Alimentos', stock:3,   min:20, price:32,  unit:'kg'  },
+      { id:4, name:'Leche Entera 1L',      sku:'AL-055', cat:'Alimentos', stock:80,  min:40, price:22,  unit:'lt'  },
+      { id:5, name:'Azúcar 2kg',           sku:'AL-033', cat:'Alimentos', stock:60,  min:25, price:48,  unit:'kg'  },
+    ],
+    'Moda Plus': [
+      { id:1, name:'Camisa Oxford',        sku:'RO-024', cat:'Ropa', stock:8,  min:15, price:350, unit:'pza' },
+      { id:2, name:'Jeans Slim',           sku:'RO-041', cat:'Ropa', stock:35, min:10, price:480, unit:'pza' },
+      { id:3, name:'Vestido Casual',       sku:'RO-088', cat:'Ropa', stock:12, min:8,  price:520, unit:'pza' },
+      { id:4, name:'Zapatos Deportivos',   sku:'RO-120', cat:'Ropa', stock:4,  min:6,  price:780, unit:'par' },
+      { id:5, name:'Suéter de Lana',       sku:'RO-059', cat:'Ropa', stock:20, min:5,  price:290, unit:'pza' },
+    ],
+    'Abarrotes Don Luis': [
+      { id:1, name:'Jabón de Barra x3',    sku:'AB-011', cat:'Hogar',    stock:90, min:20, price:38, unit:'pza' },
+      { id:2, name:'Detergente 1kg',       sku:'AB-022', cat:'Hogar',    stock:3,  min:15, price:55, unit:'kg'  },
+      { id:3, name:'Chile Seco 500g',      sku:'AL-301', cat:'Alimentos',stock:45, min:10, price:28, unit:'pza' },
+      { id:4, name:'Mayonesa 450g',        sku:'AL-288', cat:'Alimentos',stock:30, min:12, price:42, unit:'pza' },
+      { id:5, name:'Papel Higiénico x4',   sku:'AB-055', cat:'Hogar',    stock:7,  min:20, price:52, unit:'pza' },
+    ],
+    'Casa & Jardín': [
+      { id:1, name:'Sillón Ejecutivo',     sku:'HG-009', cat:'Hogar', stock:6,  min:3, price:3800, unit:'pza' },
+      { id:2, name:'Mesa de Centro',       sku:'HG-021', cat:'Hogar', stock:4,  min:2, price:2200, unit:'pza' },
+      { id:3, name:'Lámpara de Piso',      sku:'HG-044', cat:'Hogar', stock:11, min:4, price:890,  unit:'pza' },
+      { id:4, name:'Maceta Cerámica',      sku:'HG-078', cat:'Hogar', stock:22, min:8, price:145,  unit:'pza' },
+      { id:5, name:'Manguera 15m',         sku:'HG-090', cat:'Hogar', stock:9,  min:5, price:320,  unit:'pza' },
+    ],
+  },
+
+  _key(store) { return 'sc_products_' + store; },
+  _movKey(store) { return 'sc_movements_' + store; },
+
+  load(store) {
+    const raw = localStorage.getItem(this._key(store));
+    if (raw) return JSON.parse(raw);
+    const seed = this.seedData[store] || [];
+    this.save(store, seed);
+    return JSON.parse(JSON.stringify(seed));
+  },
+  save(store, prods) { localStorage.setItem(this._key(store), JSON.stringify(prods)); },
+  loadMovements(store) { return JSON.parse(localStorage.getItem(this._movKey(store)) || '[]'); },
+  saveMovements(store, movs) { localStorage.setItem(this._movKey(store), JSON.stringify(movs)); }
+};
+
+const ClientCtrl = {
+  products:  [],
+  movements: [],
+  filtered:  null,
+  store:     '',
+
+  init() {
+    this.store     = Auth.session.store;
+    this.products  = ClientModel.load(this.store);
+    this.movements = ClientModel.loadMovements(this.store);
+    ClientModel.nextId = Math.max(...this.products.map(p => p.id), 10) + 1;
+
+    document.getElementById('dh-store').textContent = this.store;
+    document.getElementById('dh-plan').textContent  = 'Plan ' + Auth.session.plan + ' · inventario en tiempo real';
+
+    ClientView.renderAll();
+  },
+
+  save() { ClientModel.save(this.store, this.products); },
+
+  addProduct() {
+    const name  = document.getElementById('p-name').value.trim();
+    const sku   = document.getElementById('p-sku').value.trim();
+    if (!name || !sku) { showToast('Completa nombre y SKU'); return; }
+
+    this.products.push({
+      id:    ClientModel.nextId++,
+      name, sku,
+      cat:   document.getElementById('p-cat').value,
+      stock: +document.getElementById('p-stock').value  || 0,
+      min:   +document.getElementById('p-min').value    || 10,
+      price: +document.getElementById('p-price').value  || 0,
+      unit:  document.getElementById('p-unit').value,
+    });
+    this.filtered = null;
+    this.save();
+    closeModal('add-product');
+    ClientView.renderAll();
+    showToast('Producto agregado: ' + name);
+    ['p-name','p-sku'].forEach(id => document.getElementById(id).value = '');
+  },
+
+  openEdit(id) {
+    const p = this.products.find(x => x.id === id);
+    if (!p) return;
+    ClientModel.editingId = id;
+    document.getElementById('edit-name').textContent  = p.name + ' · ' + p.sku;
+    document.getElementById('edit-stock').value       = p.stock;
+    document.getElementById('edit-min').value         = p.min;
+    document.getElementById('edit-price').value       = p.price;
+    openModal('edit');
+  },
+
+  saveEdit() {
+    const p = this.products.find(x => x.id === ClientModel.editingId);
+    if (!p) return;
+    const ns = +document.getElementById('edit-stock').value;
+    const nm = +document.getElementById('edit-min').value;
+    const np = +document.getElementById('edit-price').value;
+    if (isNaN(ns) || ns < 0) { showToast('Valor de stock inválido'); return; }
+    p.stock = ns; p.min = nm; p.price = np;
+    this.filtered = null;
+    this.save();
+    closeModal('edit');
+    ClientView.renderAll();
+    showToast('Producto actualizado: ' + p.name);
+  },
+
+  deleteProduct(id) {
+    const p = this.products.find(x => x.id === id);
+    if (!confirm('¿Eliminar "' + p.name + '"?')) return;
+    this.products.splice(this.products.indexOf(p), 1);
+    this.filtered = null;
+    this.save();
+    ClientView.renderAll();
+    showToast('Producto eliminado');
+  },
+
+  toggleAll(cb) {
+    (this.filtered || this.products).forEach(p => p._checked = cb.checked);
+    ClientView.renderInventory();
+  },
+
+  bulkRestock() {
+    const sel = this.products.filter(p => p._checked);
+    if (!sel.length) { showToast('Selecciona al menos un producto'); return; }
+    sel.forEach(p => { p.stock = p.min * 5; p._checked = false; });
+    this.filtered = null; this.save(); ClientView.renderAll();
+    showToast('Reabastecidos ' + sel.length + ' producto(s)');
+  },
+
+  bulkDelete() {
+    const sel = this.products.filter(p => p._checked);
+    if (!sel.length) { showToast('Selecciona al menos un producto'); return; }
+    if (!confirm('¿Eliminar ' + sel.length + ' producto(s)?')) return;
+    sel.forEach(p => this.products.splice(this.products.indexOf(p), 1));
+    this.filtered = null; this.save(); ClientView.renderAll();
+    showToast(sel.length + ' producto(s) eliminados');
+  },
+
+  filter() {
+    const q   = document.getElementById('search-inp').value.toLowerCase();
+    const cat = document.getElementById('filter-cat').value;
+    this.filtered = this.products.filter(p =>
+      (!q   || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)) &&
+      (!cat || p.cat === cat)
+    );
+    ClientView.renderInventory();
+  },
+
+  addMovement() {
+    const prodId = +document.getElementById('mov-prod').value;
+    const type   = document.getElementById('mov-type').value;
+    const qty    = +document.getElementById('mov-qty').value;
+    if (!qty || qty <= 0) { showToast('Ingresa una cantidad válida'); return; }
+    const p = this.products.find(x => x.id === prodId);
+    if (type === 'salida' && p.stock < qty) { showToast('Stock insuficiente'); return; }
+    if (type === 'entrada') p.stock += qty;
+    else                    p.stock -= qty;
+    this.movements.unshift({
+      date: new Date().toLocaleString('es-MX'),
+      type, qty, product: p.name, user: Auth.session.name
+    });
+    ClientModel.saveMovements(this.store, this.movements);
+    this.filtered = null; this.save();
+    closeModal('add-movement');
+    ClientView.renderAll();
+    showToast((type === 'entrada' ? 'Entrada' : 'Salida') + ' registrada: ' + p.name);
+  },
+
+  export() { showToast('Exportando inventario... (demo)'); }
+};
+
+const ClientView = {
+  renderAll() {
+    this.renderStats();
+    this.renderRecent();
+    this.renderDashAlerts();
+    this.renderChart();
+    this.renderCatDist();
+    this.renderInventory();
+    this.renderAlerts();
+    this.renderMovements();
+    this.renderProfile();
+    this.updateSidebar();
+  },
+
+  renderStats() {
+    const p     = ClientCtrl.products;
+    const low   = p.filter(x => x.stock > 0 && x.stock <= x.min).length;
+    const out   = p.filter(x => x.stock === 0).length;
+    const cats  = new Set(p.map(x => x.cat)).size;
+    const val   = p.reduce((s,x) => s + x.stock * x.price, 0);
+    document.getElementById('s-total').textContent   = p.length;
+    document.getElementById('s-total-d').textContent = p.length + ' productos registrados';
+    document.getElementById('s-low').textContent     = low + out;
+    document.getElementById('s-cats').textContent    = cats;
+    document.getElementById('s-value').textContent   = '$' + val.toLocaleString('es-MX', {maximumFractionDigits:0});
+  },
+
+  renderRecent() {
+    const rows = [...ClientCtrl.products].slice(-7).reverse();
+    document.getElementById('recent-tbody').innerHTML = rows.length
+      ? rows.map(p => `
+        <tr>
+          <td class="td-main">${p.name}<div class="td-muted">${p.sku}</div></td>
+          <td><span class="badge badge-blue">${p.cat}</span></td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-bg"><div class="bar-fill" style="width:${stockPct(p)}%;background:${stockColor(p)}"></div></div>
+              <span class="bar-num">${p.stock}</span>
+            </div>
+          </td>
+          <td>${stockBadge(p)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">SIN DATOS</div>Agrega tu primer producto</div></td></tr>`;
+  },
+
+  renderDashAlerts() {
+    const alerts = ClientCtrl.products.filter(p => p.stock <= p.min).sort((a,b) => a.stock - b.stock).slice(0,5);
+    document.getElementById('dash-alerts').innerHTML = alerts.length
+      ? alerts.map(p => `
+        <div class="alert-item ${p.stock===0?'danger-item':'warn-item'}">
+          <div class="alert-dot" style="background:${p.stock===0?'var(--danger)':'var(--warn)'}"></div>
+          <div>
+            <div class="alert-text"><strong style="color:var(--ice)">${p.name}</strong></div>
+            <div class="alert-meta">${p.sku} · ${p.stock} ${p.unit} · mín. ${p.min}</div>
+          </div>
+        </div>`).join('')
+      : '<div style="font-size:.78rem;color:rgba(77,148,221,.3);padding:.5rem 0;text-align:center">Sin alertas activas</div>';
+  },
+
+  renderChart() {
+    const data = [34,48,22,60,41,55,38];
+    const days = ['LU','MA','MI','JU','VI','SA','DO'];
+    const max  = Math.max(...data);
+    document.getElementById('chart-bars').innerHTML = data.map((v,i) =>
+      `<div class="mc-bar${i===6?' hi':''}" style="height:${Math.round((v/max)*100)}%"></div>`).join('');
+    document.getElementById('chart-lbls').innerHTML = days.map(d =>
+      `<div class="mc-lbl">${d}</div>`).join('');
+  },
+
+  renderCatDist() {
+    const cats  = {};
+    ClientCtrl.products.forEach(p => cats[p.cat] = (cats[p.cat]||0)+1);
+    const total = ClientCtrl.products.length || 1;
+    const cols  = ['var(--n300)','#4dd4a0','var(--warn)','var(--n200)','rgba(217,64,64,.7)'];
+    document.getElementById('cat-dist').innerHTML = Object.keys(cats).length
+      ? Object.entries(cats).map(([cat,n],i) => `
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;font-size:.8rem">
+            <span style="color:rgba(137,191,240,.7)">${cat}</span>
+            <span style="color:rgba(77,148,221,.4)">${n} (${Math.round(n/total*100)}%)</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(n/total*100)}%;background:${cols[i%cols.length]}"></div></div>
+        </div>`).join('')
+      : '<div style="font-size:.78rem;color:rgba(77,148,221,.3);text-align:center;padding:.5rem 0">Sin datos</div>';
+  },
+
+  renderInventory() {
+    const prods = ClientCtrl.filtered || ClientCtrl.products;
+    document.getElementById('inv-tbody').innerHTML = prods.length
+      ? prods.map(p => `
+        <tr>
+          <td><input type="checkbox" ${p._checked?'checked':''} onchange="ClientCtrl.products.find(x=>x.id===${p.id})._checked=this.checked" style="accent-color:var(--n400)"></td>
+          <td class="td-main">${p.name}<div class="td-muted">${p.sku} · ${p.unit}</div></td>
+          <td><span class="badge badge-blue">${p.cat}</span></td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-bg"><div class="bar-fill" style="width:${stockPct(p)}%;background:${stockColor(p)}"></div></div>
+              <span class="bar-num">${p.stock}</span>
+            </div>
+          </td>
+          <td style="font-size:.82rem">$${p.price.toLocaleString()}</td>
+          <td>${stockBadge(p)}</td>
+          <td>
+            <div style="display:flex;gap:.3rem">
+              <button class="btn btn-ghost        btn-sm" onclick="ClientCtrl.openEdit(${p.id})">Editar</button>
+              <button class="btn btn-danger-soft  btn-sm" onclick="ClientCtrl.deleteProduct(${p.id})">Eliminar</button>
+            </div>
+          </td>
+        </tr>`).join('')
+      : `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">VACÍO</div>No se encontraron productos</div></td></tr>`;
+
+    document.getElementById('inv-count').textContent  = prods.length;
+    document.getElementById('inv-footer').textContent =
+      'Mostrando ' + prods.length + ' de ' + ClientCtrl.products.length + ' productos';
+  },
+
+  renderAlerts() {
+    const alerts = ClientCtrl.products.filter(p => p.stock <= p.min);
+    document.getElementById('alerts-tbody').innerHTML = alerts.length
+      ? alerts.map(p => `
+        <tr>
+          <td class="td-main">${p.name}</td>
+          <td class="td-muted">${p.sku}</td>
+          <td style="font-weight:600;color:${p.stock===0?'var(--danger)':'var(--warn)'}">${p.stock} ${p.unit}</td>
+          <td class="td-muted">${p.min} ${p.unit}</td>
+          <td>${stockBadge(p)}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="ClientCtrl.openEdit(${p.id})">Ajustar</button></td>
+        </tr>`).join('')
+      : `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">TODO OK</div>Sin alertas activas</div></td></tr>`;
+  },
+
+  renderMovements() {
+    const sel = document.getElementById('mov-prod');
+    if (sel) {
+      sel.innerHTML = ClientCtrl.products.map(p =>
+        `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+    document.getElementById('mov-tbody').innerHTML = ClientCtrl.movements.length
+      ? ClientCtrl.movements.slice(0,20).map(m => `
+        <tr>
+          <td class="td-muted" style="font-size:.75rem">${m.date}</td>
+          <td><span class="badge ${m.type==='entrada'?'badge-ok':'badge-warn'}">${m.type === 'entrada' ? 'ENTRADA' : 'SALIDA'}</span></td>
+          <td class="td-main">${m.product}</td>
+          <td style="font-weight:600">${m.qty}</td>
+          <td class="td-muted">${m.user}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">HISTORIAL</div>Sin movimientos registrados</div></td></tr>`;
+  },
+
+  renderProfile() {
+    const s = Auth.session;
+    const initial = (s.store || s.name).substring(0,2).toUpperCase();
+    document.getElementById('profile-body').innerHTML = `
+      <div class="profile-block">
+        <div class="profile-initial">${initial}</div>
+        <div>
+          <div class="profile-name">${s.name}</div>
+          <div class="profile-store">${s.store}</div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-lbl">Usuario</div>   <div class="info-val">${s.username}</div>
+        <div class="info-lbl">Rol</div>        <div class="info-val"><span class="badge badge-blue">CLIENTE</span></div>
+        <div class="info-lbl">Plan</div>       <div class="info-val">${s.plan}</div>
+        <div class="info-lbl">Sesión</div>     <div class="info-val" style="font-size:.76rem">${new Date(s.loginAt).toLocaleString('es-MX')}</div>
+      </div>`;
+
+    const plans = {
+      'Básico':     { price:'$299 <span>/mes</span>', feat:'+ Hasta 500 productos\n+ 1 usuario\n+ Dashboard básico\n+ Soporte por email' },
+      'Pro':        { price:'$799 <span>/mes</span>', feat:'+ Hasta 2,000 productos\n+ 5 usuarios\n+ Reportes avanzados\n+ Soporte prioritario\n+ Exportación CSV/PDF' },
+      'Enterprise': { price:'Personalizado',          feat:'+ Productos ilimitados\n+ Usuarios ilimitados\n+ API access\n+ Soporte 24/7\n+ Capacitación incluida' },
+    };
+    const pl = plans[s.plan] || plans['Básico'];
+    document.getElementById('plan-body').innerHTML = `
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:2px;color:var(--ice);margin-bottom:.4rem">${s.plan}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:1px;color:var(--n300);margin-bottom:.75rem">${pl.price}</div>
+      <div style="font-size:.8rem;font-weight:300;line-height:1.9;color:rgba(137,191,240,.55)">${pl.feat.replace(/\n/g,'<br>')}</div>`;
+  },
+
+  updateSidebar() {
+    const alertN = ClientCtrl.products.filter(p => p.stock <= p.min).length;
+    document.getElementById('sb-prod-count').textContent  = ClientCtrl.products.length;
+    document.getElementById('sb-alert-count').textContent = alertN;
+  }
+};
+
+function stockColor(p) {
+  if (p.stock === 0)    return 'var(--danger)';
+  if (p.stock <= p.min) return 'var(--warn)';
+  return '#4dd4a0';
+}
+function stockPct(p) {
+  return Math.min(100, Math.round((p.stock / Math.max(p.stock, p.min * 3)) * 100));
+}
+function stockBadge(p) {
+  if (p.stock === 0)    return '<span class="badge badge-out">AGOTADO</span>';
+  if (p.stock <= p.min) return '<span class="badge badge-low">STOCK BAJO</span>';
+  return '<span class="badge badge-ok">DISPONIBLE</span>';
+}
+
+function showView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function openModal(name)  { document.getElementById('modal-' + name).classList.add('open'); }
+function closeModal(name) { document.getElementById('modal-' + name).classList.remove('open'); }
+function closeOnBg(e, name) { if (e.target === e.currentTarget) closeModal(name); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+if (Auth.init()) ClientCtrl.init();
+</script>
+</body>
+</html>
