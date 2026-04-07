@@ -18,10 +18,10 @@ export default async function handler(req, res) {
 
     try {
       const result = await pool.query(
-        `INSERT INTO usuarios (nombre, usuario, contrasena, rol, comercio_id)
+        `INSERT INTO usuarios (username, nombre, password_hash, rol, comercio_id)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, nombre, usuario, rol`,
-        [nombre, usuario, contrasena, rol, comercio_id || 1]
+         RETURNING id, nombre, username, rol`,
+        [usuario, nombre, contrasena, rol, comercio_id || null]
       );
       return res.status(200).json({ success: true, usuario: result.rows[0] });
     } catch (error) {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
   } else if (req.method === 'GET') {
     try {
-      const result = await pool.query('SELECT id, nombre, usuario, rol, comercio_id FROM usuarios ORDER BY id DESC');
+      const result = await pool.query('SELECT id, nombre, username, rol, comercio_id FROM usuarios ORDER BY id DESC');
       return res.status(200).json({ usuarios: result.rows });
     } catch (error) {
       return res.status(500).json({ error: error.message });
