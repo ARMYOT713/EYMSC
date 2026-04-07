@@ -470,10 +470,10 @@ const ClientCtrl = {
     categoria:   document.getElementById('p-cat').value,
     unidad:      document.getElementById('p-unit').value,
     stock:       +document.getElementById('p-stock').value  || 0,
-    min:         +document.getElementById('p-min').value    || 10,
+    stock_min:   +document.getElementById('p-min').value    || 10,  // ← cambiado
     precio:      +document.getElementById('p-price').value  || 0,
     comercio_id: 1
-  };
+};
 
   try {
     const res  = await fetch('https://eymsc.vercel.app/api/productos', {
