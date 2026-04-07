@@ -459,27 +459,38 @@ const ClientCtrl = {
 
   save() { ClientModel.save(this.store, this.products); },
 
-  addProduct() {
-    const name  = document.getElementById('p-name').value.trim();
-    const sku   = document.getElementById('p-sku').value.trim();
-    if (!name || !sku) { showToast('Completa nombre y SKU'); return; }
+  async addProduct() {
+  const name  = document.getElementById('p-name').value.trim();
+  const sku   = document.getElementById('p-sku').value.trim();
+  if (!name || !sku) { showToast('Completa nombre y SKU'); return; }
 
-    this.products.push({
-      id:    ClientModel.nextId++,
-      name, sku,
-      cat:   document.getElementById('p-cat').value,
-      stock: +document.getElementById('p-stock').value  || 0,
-      min:   +document.getElementById('p-min').value    || 10,
-      price: +document.getElementById('p-price').value  || 0,
-      unit:  document.getElementById('p-unit').value,
+  const producto = {
+    nombre:      name,
+    sku,
+    categoria:   document.getElementById('p-cat').value,
+    unidad:      document.getElementById('p-unit').value,
+    stock:       +document.getElementById('p-stock').value  || 0,
+    min:         +document.getElementById('p-min').value    || 10,
+    precio:      +document.getElementById('p-price').value  || 0,
+    comercio_id: 1
+  };
+
+  try {
+    const res  = await fetch('https://eymsc.vercel.app/api/productos', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(producto)
     });
-    this.filtered = null;
-    this.save();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('Producto guardado: ' + name);
     closeModal('add-product');
-    ClientView.renderAll();
-    showToast('Producto agregado: ' + name);
     ['p-name','p-sku'].forEach(id => document.getElementById(id).value = '');
-  },
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+},
 
   openEdit(id) {
     const p = this.products.find(x => x.id === id);
