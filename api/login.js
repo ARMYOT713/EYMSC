@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import bcrypt from 'bcrypt';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,20 +14,35 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
-
     const result = await sql`
-      SELECT id, nombre, rol
+      SELECT id, nombre, rol, password_hash
       FROM usuarios
-      WHERE usuario = ${username}
-        AND contrasena = ${password}
+      WHERE username = ${username}
       LIMIT 1
     `;
 
     if (result.length === 0) {
-      return res.status(401).json({ error: 'Credenciales incorrectas.' });
+      return res.status(401).json({ error: 'Usuario no encontrado.' });
     }
 
-    return res.status(200).json({ success: true, user: result[0] });
+    const user = result[0];
+
+    
+    const valid = await bcrypt.compare(password, user.password_hash);
+
+    if (!valid) {
+      return res.status(401).json({ error: 'Contraseña incorrecta.' });
+    }
+
+    
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        nombre: user.nombre,
+        rol: user.rol
+      }
+    });
 
   } catch (err) {
     console.error(err);
