@@ -736,10 +736,6 @@ const AdminView = {
   },
 
   renderUsers() {
-    if (uSel) {
-      uSel.innerHTML = AdminModel.stores.map(s =>
-        `<option value="${s.id}">${s.name}</option>`).join('');
-    }
     document.getElementById('users-count').textContent = AdminModel.users.length;
     document.getElementById('users-tbody').innerHTML = AdminModel.users.map(u => `
       <tr>
