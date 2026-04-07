@@ -545,24 +545,30 @@ const AdminCtrl = {
     ['s-name','s-city','s-owner','s-user','s-pass'].forEach(i => document.getElementById(i).value = '');
   },
 
-  addUser() {
-    const name  = document.getElementById('u-name').value.trim();
-    const uname = document.getElementById('u-user').value.trim();
-    const pass  = document.getElementById('u-pass').value.trim();
-    if (!name || !uname || !pass) { showToast('Completa todos los campos'); return; }
+ async addUser() {
+  const name  = document.getElementById('u-name').value.trim();
+  const uname = document.getElementById('u-user').value.trim();
+  const pass  = document.getElementById('u-pass').value.trim();
+  const rol   = document.getElementById('u-role').value;
+  const comercio_id = document.getElementById('u-store').value || 1;
 
-    AdminModel.users.push({
-      id:       'u' + AdminModel.nextId++,
-      username:  uname, name,
-      role:      document.getElementById('u-role').value,
-      store:     document.getElementById('u-store').value || null,
-      plan:      'Pro'
+  if (!name || !uname || !pass) { showToast('Completa todos los campos'); return; }
+
+  try {
+    const res  = await fetch('https://eymsc.vercel.app/api/usuarios', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ nombre: name, usuario: uname, contrasena: pass, rol, comercio_id })
     });
-    closeModal('add-user');
-    AdminView.renderUsers();
-    AdminView.updateSidebar();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
     showToast('Usuario creado: ' + name);
-  },
+    closeModal('add-user');
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+},
 
   openStoreDetail(id) {
     const s = AdminModel.stores.find(x => x.id === id);
